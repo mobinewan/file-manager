@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% from "macros.html" import date_picker %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-box-seam"></i> {{ p.name }} {% if p.spec %}<span class="text-muted small">（{{ p.spec }}）</span>{% endif %}</h4>
+    <div class="text-muted small">
+      <a href="{{ url_for('manufacturer.detail', manufacturer_id=p.manufacturer_id) }}">{{ p.manufacturer.name }}</a>
+      {% if p.category %}<span class="mx-2">|</span> 类别：{{ p.category }}{% endif %}
+      {% if p.shelf_life_days %}<span class="mx-2">|</span> 保质期：{{ p.shelf_life_days }} 天{% endif %}
+    </div>
+  </div>
+  <div>
+    <a href="{{ url_for('product.edit', product_id=p.id) }}" class="btn btn-outline-secondary btn-sm">编辑</a>
+    <form method="post" action="{{ url_for('product.delete', product_id=p.id) }}" class="d-inline" onsubmit="return confirm('确认删除该商品？将同时删除其所有报告')">
+      <button class="btn btn-outline-danger btn-sm">删除</button>
+    </form>
+  </div>
+</div>
+
+{% if p.remark %}<div class="alert alert-light"><i class="bi bi-sticky"></i> {{ p.remark }}</div>{% endif %}
+
+<div class="row g-3">
+  <!-- 关联厂家级证件 -->
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light"><i class="bi bi-building"></i> 厂家级证件（来自 <a href="{{ url_for('manufacturer.detail', manufacturer_id=p.manufacturer_id) }}">{{ p.manufacturer.name }}</a>）</div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="border rounded p-2 h-100">
+              <div class="d-flex justify-content-between">
+                <strong>营业执照</strong>
+                {% if p.manufacturer.business_license %}
+                  {% set st = status_of(p.manufacturer.business_license.valid_until, threshold) %}
+                  <span class="badge {{ status_badge(st) }}">{{ status_label(st) }}</span>
+                {% else %}<span class="badge bg-dark">缺失</span>{% endif %}
+              </div>
+              {% if p.manufacturer.business_license %}
+                <div class="small text-muted">有效期至：{{ p.manufacturer.business_license.valid_until or '长期' }}</div>
+                <a href="{{ url_for('certificate.preview', cert_type='business_license', cert_id=p.manufacturer.business_license.id) }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">预览</a>
+                <a href="{{ url_for('certificate.download', cert_type='business_license', cert_id=p.manufacturer.business_license.id) }}" class="btn btn-sm btn-outline-secondary mt-1">下载</a>
+              {% else %}
+                <div class="small text-muted">未上传，请到厂家页面上传</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="border rounded p-2 h-100">
+              <div class="d-flex justify-content-between">
+                <strong>食品经营许可证</strong>
+                {% if p.manufacturer.food_license %}
+                  {% set st = status_of(p.manufacturer.food_license.valid_until, threshold) %}
+                  <span class="badge {{ status_badge(st) }}">{{ status_label(st) }}</span>
+                {% else %}<span class="badge bg-dark">缺失</span>{% endif %}
+              </div>
+              {% if p.manufacturer.food_license %}
+                <div class="small text-muted">有效期至：{{ p.manufacturer.food_license.valid_until or '长期' }}</div>
+                <a href="{{ url_for('certificate.preview', cert_type='food_license', cert_id=p.manufacturer.food_license.id) }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">预览</a>
+                <a href="{{ url_for('certificate.download', cert_type='food_license', cert_id=p.manufacturer.food_license.id) }}" class="btn btn-sm btn-outline-secondary mt-1">下载</a>
+              {% else %}
+                <div class="small text-muted">未上传，请到厂家页面上传</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第三方检验报告 -->
+  <div class="col-12" id="third-party">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-medical"></i> 第三方检验报告（{{ p.third_party_reports|length }}）</span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#up-tp"><i class="bi bi-upload"></i> 上传</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>报告编号</th><th>检验机构</th><th>检验日期</th><th>有效期至</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            {% for r in p.third_party_reports %}
+            {% set st = status_of(r.valid_until, threshold) %}
+            <tr>
+              <td>{{ r.report_no or '-' }}</td>
+              <td>{{ r.testing_org or '-' }}</td>
+              <td>{{ r.test_date or '-' }}</td>
+              <td>{{ r.valid_until or '-' }}</td>
+              <td><span class="badge {{ status_badge(st) }}">{{ status_label(st) }}</span></td>
+              <td>
+                <a href="{{ url_for('certificate.preview', cert_type='third_party', cert_id=r.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">预览</a>
+                <a href="{{ url_for('certificate.download', cert_type='third_party', cert_id=r.id) }}" class="btn btn-sm btn-outline-secondary">下载</a>
+                <a href="{{ url_for('certificate.edit', cert_type='third_party', cert_id=r.id) }}" class="btn btn-sm btn-outline-warning">编辑</a>
+                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#del-tp-{{ r.id }}">删除</button>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-3">暂无</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 出厂检验报告 -->
+  <div class="col-12" id="factory">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-check"></i> 出厂检验报告（{{ p.factory_reports|length }}）</span>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#up-fc"><i class="bi bi-upload"></i> 上传</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>批次号</th><th>生产日期</th><th>检验日期</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            {% for r in p.factory_reports %}
+            <tr>
+              <td>{{ r.batch_no or '-' }}</td>
+              <td>{{ r.production_date or '-' }}</td>
+              <td>{{ r.test_date or '-' }}</td>
+              <td>
+                <a href="{{ url_for('certificate.preview', cert_type='factory', cert_id=r.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">预览</a>
+                <a href="{{ url_for('certificate.download', cert_type='factory', cert_id=r.id) }}" class="btn btn-sm btn-outline-secondary">下载</a>
+                <a href="{{ url_for('certificate.edit', cert_type='factory', cert_id=r.id) }}" class="btn btn-sm btn-outline-warning">编辑</a>
+                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#del-fc-{{ r.id }}">删除</button>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">暂无</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 上传第三方报告 模态 -->
+<div class="modal fade" id="up-tp" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <form method="post" action="{{ url_for('product.upload_third_party', product_id=p.id) }}" enctype="multipart/form-data">
+    <div class="modal-header"><h5 class="modal-title">上传第三方检验报告</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="mb-3"><label class="form-label">选择文件</label><input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,image/*" required></div>
+      <div class="row g-2">
+        <div class="col-md-6"><label class="form-label small">报告编号</label><input type="text" name="report_no" class="form-control"></div>
+        <div class="col-md-6"><label class="form-label small">检验机构</label><input type="text" name="testing_org" class="form-control"></div>
+        <div class="col-md-4">
+          <label class="form-label small">检验日期 <span class="text-danger">*</span></label>
+          {{ date_picker('test_date', today_date_iso, required=True, id_suffix='tp-test') }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">有效期起</label>
+          {{ date_picker('valid_from', today_date_iso, id_suffix='tp-vf') }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small">有效期至 <span class="text-danger">*</span></label>
+          {{ date_picker('valid_until', today_plus_365_iso, required=True, id_suffix='tp-vu') }}
+        </div>
+      </div>
+      <div class="alert alert-info small mt-2 mb-0"><i class="bi bi-info-circle"></i> 默认：检验日期与起始日期为今天，到期日为 365 天后，可自行修改。</div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary">上传</button></div>
+  </form>
+</div></div></div>
+
+<!-- 上传厂检 模态 -->
+<div class="modal fade" id="up-fc" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <form method="post" action="{{ url_for('product.upload_factory', product_id=p.id) }}" enctype="multipart/form-data">
+    <div class="modal-header"><h5 class="modal-title">上传出厂检验报告</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="mb-3"><label class="form-label">选择文件</label><input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,image/*" required></div>
+      <div class="row g-2">
+        <div class="col-md-6"><label class="form-label small">批次号</label><input type="text" name="batch_no" class="form-control"></div>
+        <div class="col-md-6">
+          <label class="form-label small">生产日期 <span class="text-danger">*</span></label>
+          {{ date_picker('production_date', None, required=True, id_suffix='fc-pd') }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small">检验日期（默认同生产日期，可修改）</label>
+          {{ date_picker('test_date', None, id_suffix='fc-td') }}
+        </div>
+      </div>
+      <div class="alert alert-info small mb-0"><i class="bi bi-info-circle"></i> 厂检不再需要保质期/到期日，仅记录生产与检验日期。</div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary">上传</button></div>
+  </form>
+</div></div></div>
+
+<script>
+// 同步厂检生产日期 → 检验日期（检验日期为空时自动填充生产日期）
+(function () {
+  var pd = document.querySelector('#dp-fc-pd-y');
+  var td = document.querySelector('#dp-fc-td-y');
+  if (!pd || !td) return;
+  ['input'].forEach(function (evt) {
+    pd.addEventListener(evt, function () {
+      // 仅当检验日期三段都为空时同步
+      var tdEmpty = !document.querySelector('#dp-fc-td-y').value && !document.querySelector('#dp-fc-td-m').value && !document.querySelector('#dp-fc-td-d').value;
+      if (tdEmpty) {
+        document.querySelector('#dp-fc-td-y').value = document.querySelector('#dp-fc-pd-y').value;
+        document.querySelector('#dp-fc-td-m').value = document.querySelector('#dp-fc-pd-m').value;
+        document.querySelector('#dp-fc-td-d').value = document.querySelector('#dp-fc-pd-d').value;
+        // 触发同步隐藏字段
+        document.querySelector('#dp-fc-td-y').dispatchEvent(new Event('input'));
+      }
+    });
+  });
+})();
+</script>
+
+{% for r in p.third_party_reports %}
+<div class="modal fade" id="del-tp-{{ r.id }}" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <form method="post" action="{{ url_for('certificate.delete', cert_type='third_party', cert_id=r.id) }}">
+    <div class="modal-header"><h5 class="modal-title">删除报告？</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">将删除文件与记录。</div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-danger">删除</button></div>
+  </form>
+</div></div></div>
+{% endfor %}
+
+{% for r in p.factory_reports %}
+<div class="modal fade" id="del-fc-{{ r.id }}" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <form method="post" action="{{ url_for('certificate.delete', cert_type='factory', cert_id=r.id) }}">
+    <div class="modal-header"><h5 class="modal-title">删除报告？</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">将删除文件与记录。</div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-danger">删除</button></div>
+  </form>
+</div></div></div>
+{% endfor %}
+{% endblock %}

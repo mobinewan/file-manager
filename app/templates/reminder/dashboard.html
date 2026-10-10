@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}到期看板{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-clock-history"></i> 到期看板</h4>
+  <div class="text-muted small">阈值：{{ grouped.threshold }} 天内即将到期</div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card text-white bg-danger shadow-sm">
+      <div class="card-body">
+        <div class="fs-5">已过期</div>
+        <div class="display-6 fw-bold">{{ grouped.expired|length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-dark bg-warning shadow-sm">
+      <div class="card-body">
+        <div class="fs-5">即将到期（{{ grouped.threshold }}天内）</div>
+        <div class="display-6 fw-bold">{{ grouped.expiring_soon|length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-info shadow-sm">
+      <div class="card-body">
+        <div class="fs-5">需关注总数</div>
+        <div class="display-6 fw-bold">{{ summary.total }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-light"><i class="bi bi-exclamation-triangle text-danger"></i> 已过期证件（{{ grouped.expired|length }}）</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>证件类型</th><th>有效期至</th><th>已过期天数</th><th>厂家/商品</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+        {% for it in grouped.expired %}
+        <tr class="table-danger">
+          <td>{{ it.cert_type }}</td>
+          <td>{{ it.valid_until }}</td>
+          <td>{{ it.days_remaining }} 天</td>
+          <td>{{ it.owner or '-' }}</td>
+          <td>
+            {% if it.owner_url %}
+              {% set ep = it.owner_url[1] %}
+              <a href="{{ url_for(it.owner_url[0], **ep) }}" class="btn btn-sm btn-outline-primary">查看</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">暂无已过期证件</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-light"><i class="bi bi-clock text-warning"></i> 即将到期证件（{{ grouped.expiring_soon|length }}）</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>证件类型</th><th>有效期至</th><th>剩余天数</th><th>厂家/商品</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+        {% for it in grouped.expiring_soon %}
+        <tr class="table-warning">
+          <td>{{ it.cert_type }}</td>
+          <td>{{ it.valid_until }}</td>
+          <td>{{ it.days_remaining }} 天</td>
+          <td>{{ it.owner or '-' }}</td>
+          <td>
+            {% if it.owner_url %}
+              {% set ep = it.owner_url[1] %}
+              <a href="{{ url_for(it.owner_url[0], **ep) }}" class="btn btn-sm btn-outline-primary">查看</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">暂无即将到期证件</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

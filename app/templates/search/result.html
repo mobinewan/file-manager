@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}搜索结果：{{ q }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-search"></i> 搜索结果</h4>
+  <form method="get" action="{{ url_for('search.search') }}" class="input-group" style="width:50%">
+    <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="再次搜索">
+    <button class="btn btn-outline-primary">搜索</button>
+  </form>
+</div>
+
+{% if not q %}
+<div class="alert alert-info">请输入搜索词</div>
+{% elif not result %}
+<div class="alert alert-warning">未找到匹配商品，请尝试其他关键词</div>
+{% else %}
+
+<div class="mb-2 text-muted small">共找到 {{ result|length }} 个厂家，含符合 "{{ q }}" 的商品</div>
+
+{% for item in result %}
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div>
+      <i class="bi bi-building"></i>
+      <a href="{{ url_for('manufacturer.detail', manufacturer_id=item.manufacturer.id, q=q) }}" class="fw-bold text-decoration-none fs-5">{{ item.manufacturer.name }}</a>
+      {% if item.manufacturer.business_license %}
+        <span class="badge {{ status_badge(status_of(item.manufacturer.business_license.valid_until, threshold)) }} ms-2">营业执照：{{ status_label(status_of(item.manufacturer.business_license.valid_until, threshold)) }}</span>
+      {% else %}
+        <span class="badge bg-dark ms-2">营业执照：缺失</span>
+      {% endif %}
+      {% if item.manufacturer.food_license %}
+        <span class="badge {{ status_badge(status_of(item.manufacturer.food_license.valid_until, threshold)) }} ms-2">食品证：{{ status_label(status_of(item.manufacturer.food_license.valid_until, threshold)) }}</span>
+      {% else %}
+        <span class="badge bg-dark ms-2">食品证：缺失</span>
+      {% endif %}
+    </div>
+    <span class="badge bg-secondary">{{ item.products|length }} 件商品</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>商品名</th><th>类别</th><th>规格</th><th>第三方检验</th><th>厂检</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+        {% for p in item.products %}
+        <tr>
+          <td>{{ p.name }}</td>
+          <td>{{ p.category or '-' }}</td>
+          <td>{{ p.spec or '-' }}</td>
+          <td>
+            {% set st = p._cert_summary.third_party %}
+            <a href="{{ url_for('product.detail', product_id=p.id) }}#third-party" class="text-decoration-none">
+              <span class="badge {{ status_badge(st) }}">{{ status_label(st) }}</span>
+            </a>
+          </td>
+          <td>
+            {% set st2 = p._cert_summary.factory %}
+            <a href="{{ url_for('product.detail', product_id=p.id) }}#factory" class="text-decoration-none">
+              <span class="badge {{ status_badge(st2) }}">{{ status_label(st2) }}</span>
+            </a>
+          </td>
+          <td><a href="{{ url_for('product.detail', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">查看报告</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+
+{% endif %}
+{% endblock %}

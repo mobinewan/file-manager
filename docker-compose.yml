@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: file-manage-system
+    ports:
+      - "12321:12321"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./instance:/app/instance
+    environment:
+      - SECRET_KEY=please-change-this-secret-key-in-production
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - DEFAULT_THRESHOLD_DAYS=30
+      - PORT=12321
+      - DB_PATH=/app/instance/app.db
+      - UPLOAD_FOLDER=/app/uploads
+    restart: unless-stopped

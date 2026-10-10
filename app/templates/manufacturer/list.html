@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}厂家列表{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-building"></i> 厂家列表</h4>
+  <a href="{{ url_for('manufacturer.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> 新建厂家</a>
+</div>
+
+<form method="get" class="input-group mb-3">
+  <input type="text" name="q" class="form-control" placeholder="按厂家名/统一信用代码/联系人搜索" value="{{ q }}">
+  <button class="btn btn-outline-primary">搜索</button>
+  <a href="{{ url_for('manufacturer.list_manufacturers') }}" class="btn btn-outline-secondary">重置</a>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>厂家名称</th>
+          <th>统一信用代码</th>
+          <th>联系人</th>
+          <th>电话</th>
+          <th>营业执照</th>
+          <th>食品经营许可证</th>
+          <th>商品数</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in manufacturers %}
+        <tr>
+          <td><a href="{{ url_for('manufacturer.detail', manufacturer_id=m.id) }}" class="text-decoration-none">{{ m.name }}</a></td>
+          <td>{{ m.unified_credit_code or '-' }}</td>
+          <td>{{ m.contact_person or '-' }}</td>
+          <td>{{ m.contact_phone or '-' }}</td>
+          <td>
+            {% if m.business_license %}
+              {% set st = status_of(m.business_license.valid_until, threshold) %}
+              <span class="badge {{ status_badge(st) }}">{{ status_label(st) }}</span>
+            {% else %}
+              <span class="badge bg-dark">缺失</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if m.food_license %}
+              {% set st = status_of(m.food_license.valid_until, threshold) %}
+              <span class="badge {{ status_badge(st) }}">{{ status_label(st) }}</span>
+            {% else %}
+              <span class="badge bg-dark">缺失</span>
+            {% endif %}
+          </td>
+          <td>{{ m.products|length }}</td>
+          <td>
+            <a href="{{ url_for('manufacturer.detail', manufacturer_id=m.id) }}" class="btn btn-sm btn-outline-primary">详情</a>
+            <a href="{{ url_for('manufacturer.edit', manufacturer_id=m.id) }}" class="btn btn-sm btn-outline-secondary">编辑</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">暂无厂家，点击右上角"新建厂家"</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

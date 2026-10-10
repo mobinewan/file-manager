@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Excel 比对{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light"><i class="bi bi-file-earmark-spreadsheet"></i> Excel 比对上传</div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <strong>使用说明：</strong>上传 Excel 文件（.xlsx/.xls），系统将按列比对证件库。<br>
+          约定列顺序：<strong>厂家名、商品名、规格</strong>。第一行可为表头（含"厂家""商品""规格"等字样自动跳过）。<br>
+          比对结果将显示每个项目各类证件的有无与状态，可导出 Excel 备查。
+        </div>
+        <form method="post" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label">选择 Excel 文件</label>
+            <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+          </div>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-upload"></i> 上传并比对</button>
+          <a href="{{ url_for('index') }}" class="btn btn-link">返回首页</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

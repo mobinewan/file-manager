@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑厂家' if m else '新建厂家' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light"><i class="bi bi-building"></i> {{ '编辑厂家' if m else '新建厂家' }}</div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">厂家名称 <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" value="{{ m.name if m else '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">统一社会信用代码</label>
+            <input type="text" name="unified_credit_code" class="form-control" value="{{ m.unified_credit_code if m and m.unified_credit_code else '' }}">
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">联系人</label>
+              <input type="text" name="contact_person" class="form-control" value="{{ m.contact_person if m and m.contact_person else '' }}">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">联系电话</label>
+              <input type="text" name="contact_phone" class="form-control" value="{{ m.contact_phone if m and m.contact_phone else '' }}">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">地址</label>
+            <input type="text" name="address" class="form-control" value="{{ m.address if m and m.address else '' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">备注</label>
+            <textarea name="remark" class="form-control" rows="2">{{ m.remark if m and m.remark else '' }}</textarea>
+          </div>
+          <button class="btn btn-primary">保存</button>
+          <a href="{{ url_for('manufacturer.list_manufacturers') }}" class="btn btn-link">返回</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% from "macros.html" import date_picker %}
+{% block title %}打包下载{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-download"></i> 打包下载</h4>
+</div>
+
+<div class="alert alert-info small">
+  <i class="bi bi-info-circle"></i>
+  按商品名称模糊搜索（如"海天酱油"），可额外按生产日期过滤厂检报告。<br>
+  勾选商品将自动包含其厂家的营业执照 + 食品经营许可证 + 全部第三方检验报告；再勾选具体的厂检报告条目。<br>
+  点击底部"生成 ZIP"按钮一次性下载所有勾选项。
+</div>
+
+<!-- 搜索表单 -->
+<form method="get" action="{{ url_for('bundle.index') }}" class="row g-2 mb-3 align-items-end">
+  <div class="col-md-5">
+    <label class="form-label small">商品名称（模糊搜索）</label>
+    <div class="input-group">
+      <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
+      <input type="text" name="q" class="form-control" value="{{ q or '' }}" placeholder="如：海天酱油">
+    </div>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label small">厂检生产日期（可选，精确匹配）</label>
+    {{ date_picker('production_date', production_date or None, id_suffix='bundle-pd') }}
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> 搜索</button>
+    {% if q or production_date %}<a href="{{ url_for('bundle.index') }}" class="btn btn-outline-secondary">清除</a>{% endif %}
+  </div>
+</form>
+
+{% if q %}
+
+<form id="bundle-form" method="post" action="{{ url_for('bundle.download') }}">
+  {% if not products %}
+  <div class="alert alert-warning">未找到匹配"{{ q }}"的商品。</div>
+  {% else %}
+
+  <div class="mb-2 d-flex justify-content-between align-items-center">
+    <div class="text-muted small">共 {{ products|length }} 件商品</div>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="check-all">全选厂检</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="uncheck-all">清空</button>
+    </div>
+  </div>
+
+  {% for p in products %}
+  <div class="card shadow-sm mb-3">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <div>
+        <i class="bi bi-box-seam"></i>
+        <a href="{{ url_for('product.detail', product_id=p.id) }}" class="fw-bold text-decoration-none">{{ p.name }}</a>
+        {% if p.spec %}<span class="text-muted small ms-2">（{{ p.spec }}）</span>{% endif %}
+        <span class="text-muted small ms-2">· {{ p.manufacturer.name }}</span>
+      </div>
+      <div>
+        {% if p._all_tp %}
+        <div class="form-check form-check-inline">
+          <input class="form-check-input tp-check" type="checkbox" id="tp-{{ p.id }}" name="items" value="{{ p.id }}-all_tp" checked>
+          <label class="form-check-label small" for="tp-{{ p.id }}">含第三方报告（{{ p._all_tp|length }}份）</label>
+        </div>
+        {% else %}
+        <span class="badge bg-dark">无第三方报告</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-body">
+      {% if p._matched_fc %}
+      <div class="small text-muted mb-2">出厂检验报告（共 {{ p._matched_fc|length }} 份，勾选要打包的）：</div>
+      <div class="row g-2">
+        {% for fc in p._matched_fc %}
+        <div class="col-md-4">
+          <div class="form-check border rounded p-2">
+            <input class="form-check-input fc-check" type="checkbox" id="fc-{{ fc.id }}" name="items" value="{{ p.id }}-{{ fc.id }}">
+            <label class="form-check-label small" for="fc-{{ fc.id }}">
+              {% if fc.batch_no %}<b>批次：{{ fc.batch_no }}</b><br>{% endif %}
+              {% if fc.production_date %}生产日期：{{ fc.production_date }}<br>{% endif %}
+              {% if fc.test_date %}检验日期：{{ fc.test_date }}<br>{% endif %}
+              <a href="{{ url_for('certificate.preview', cert_type='factory', cert_id=fc.id) }}" target="_blank" class="text-decoration-none small">预览</a>
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted small">无匹配的出厂检验报告{% if production_date %}（按生产日期 {{ production_date }} 过滤）{% endif %}。</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- 提交 -->
+  <div class="sticky-bottom bg-white border-top py-2 mt-3 text-end">
+    <span class="text-muted small me-2" id="selected-info">已选 0 项</span>
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="bi bi-file-earmark-zip"></i> 生成 ZIP 打包下载
+    </button>
+  </div>
+
+  {% endif %}
+</form>
+
+<script>
+(function () {
+  var form = document.getElementById('bundle-form');
+  if (!form) return;
+
+  function updateCount() {
+    var cbs = form.querySelectorAll('input[type=checkbox]:checked');
+    var span = document.getElementById('selected-info');
+    if (span) span.textContent = '已选 ' + cbs.length + ' 项';
+  }
+
+  form.addEventListener('change', updateCount);
+
+  var allBtn = document.getElementById('check-all');
+  if (allBtn) allBtn.addEventListener('click', function () {
+    form.querySelectorAll('.fc-check').forEach(function (cb) { cb.checked = true; });
+    updateCount();
+  });
+
+  var noneBtn = document.getElementById('uncheck-all');
+  if (noneBtn) noneBtn.addEventListener('click', function () {
+    form.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.checked = false; });
+    updateCount();
+  });
+
+  updateCount();
+})();
+</script>
+
+{% endif %}
+{% endblock %}

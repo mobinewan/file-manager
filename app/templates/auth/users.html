@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}用户管理{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-people"></i> 用户管理</h4>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-light"><i class="bi bi-person-plus"></i> 新建用户</div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('auth.create_user') }}" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">用户名</label>
+        <input type="text" name="username" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">密码</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">角色</label>
+        <select name="role" class="form-select" id="new-user-role">
+          <option value="user">普通用户</option>
+          <option value="admin">管理员</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100">创建</button>
+      </div>
+      <div class="col-12 mt-2">
+        <div class="text-muted small mb-1">初始权限（仅对普通用户生效，管理员默认全部权限；创建后可在下方随时调整）：</div>
+        <div class="d-flex flex-wrap gap-3" id="new-user-perms">
+          {% for perm_name, perm_label in permissions %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="{{ perm_name }}" id="new-{{ perm_name }}">
+            <label class="form-check-label small" for="new-{{ perm_name }}">{{ perm_label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-light">用户列表</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.username }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+              <span class="badge bg-primary">管理员</span>
+            {% else %}
+              <span class="badge bg-secondary">普通用户</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge bg-success">启用</span>
+            {% else %}
+              <span class="badge bg-dark">停用</span>
+            {% endif %}
+          </td>
+          <td>{{ u.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#reset-{{ u.id }}">改密</button>
+            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#perms-{{ u.id }}">权限</button>
+            {% if u.id != current_user.id %}
+            <form method="post" action="{{ url_for('auth.toggle_active', user_id=u.id) }}" class="d-inline">
+              <button class="btn btn-sm {{ 'btn-outline-dark' if u.is_active else 'btn-outline-success' }}" onclick="return confirm('确定{{ '停用' if u.is_active else '启用' }}该用户？')">
+                {{ '停用' if u.is_active else '启用' }}
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        <div class="modal fade" id="reset-{{ u.id }}" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form method="post" action="{{ url_for('auth.reset_password', user_id=u.id) }}">
+                <div class="modal-header"><h5 class="modal-title">重置密码 - {{ u.username }}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                  <label class="form-label">新密码（至少6位）</label>
+                  <input type="password" name="new_password" class="form-control" required>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-warning">确认重置</button></div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="modal fade" id="perms-{{ u.id }}" tabindex="-1">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <form method="post" action="{{ url_for('auth.update_permissions', user_id=u.id) }}">
+                <div class="modal-header"><h5 class="modal-title">权限明细 - {{ u.username }}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                  {% if u.role == 'admin' %}
+                    <div class="alert alert-info mb-0"><i class="bi bi-info-circle"></i> 管理员默认拥有全部权限，无需勾选。</div>
+                  {% else %}
+                    <div class="mb-2 text-muted small">勾选表示授予该权限；证件删除为独立权限，未勾选的用户将无法删除任何证件。</div>
+                    <div class="row g-2">
+                      {% for perm_name, perm_label in permissions %}
+                      <div class="col-md-6">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="{{ perm_name }}" id="perm-{{ u.id }}-{{ perm_name }}" {{ 'checked' if u.permission_map().get(perm_name) else '' }}>
+                          <label class="form-check-label" for="perm-{{ u.id }}-{{ perm_name }}">{{ perm_label }}</label>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                  {% if u.role != 'admin' %}<button class="btn btn-primary">保存权限</button>{% endif %}
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

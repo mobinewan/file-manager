@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}商品列表{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-box-seam"></i> 商品列表</h4>
+  <a href="{{ url_for('product.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> 新建商品</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-5">
+    <input type="text" name="q" class="form-control" placeholder="按商品名/规格搜索" value="{{ q }}">
+  </div>
+  <div class="col-md-4">
+    <select name="category" class="form-select">
+      <option value="">全部分类</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {{ 'selected' if category == c else '' }}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-outline-primary w-100">搜索</button>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>商品名</th><th>类别</th><th>规格</th><th>厂家</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td><a href="{{ url_for('product.detail', product_id=p.id) }}">{{ p.name }}</a></td>
+          <td>{{ p.category or '-' }}</td>
+          <td>{{ p.spec or '-' }}</td>
+          <td><a href="{{ url_for('manufacturer.detail', manufacturer_id=p.manufacturer_id) }}">{{ p.manufacturer.name }}</a></td>
+          <td>
+            <a href="{{ url_for('product.detail', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">详情</a>
+            <a href="{{ url_for('product.edit', product_id=p.id) }}" class="btn btn-sm btn-outline-secondary">编辑</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">暂无商品</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

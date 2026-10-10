@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% from "macros.html" import date_picker %}
+{% block title %}{{ m.name }} - 厂家详情{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-building"></i> {{ m.name }}</h4>
+    <div class="text-muted small">
+      {% if m.unified_credit_code %}<span class="me-3">统一信用代码：{{ m.unified_credit_code }}</span>{% endif %}
+      {% if m.contact_person %}<span class="me-3">联系人：{{ m.contact_person }}</span>{% endif %}
+      {% if m.contact_phone %}<span class="me-3">电话：{{ m.contact_phone }}</span>{% endif %}
+      {% if m.address %}<span>地址：{{ m.address }}</span>{% endif %}
+    </div>
+  </div>
+  <div>
+    <a href="{{ url_for('manufacturer.edit', manufacturer_id=m.id) }}" class="btn btn-outline-secondary btn-sm">编辑厂家</a>
+    <a href="{{ url_for('product.create') }}?manufacturer_id={{ m.id }}" class="btn btn-outline-primary btn-sm">添加商品</a>
+  </div>
+</div>
+
+{% if m.remark %}<div class="alert alert-light"><i class="bi bi-sticky"></i> {{ m.remark }}</div>{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-text"></i> 营业执照</span>
+        {% if m.business_license %}
+          <span class="badge {{ status_badge(bl_status) }}">{{ status_label(bl_status) }}</span>
+        {% else %}
+          <span class="badge bg-dark">缺失</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if m.business_license %}
+          <dl class="row small mb-2">
+            <dt class="col-4">执照编号</dt><dd class="col-8">{{ m.business_license.license_no or '-' }}</dd>
+            <dt class="col-4">法定代表人</dt><dd class="col-8">{{ m.business_license.legal_person or '-' }}</dd>
+            <dt class="col-4">发证日期</dt><dd class="col-8">{{ m.business_license.issue_date or '-' }}</dd>
+            <dt class="col-4">有效期至</dt><dd class="col-8">{{ m.business_license.valid_until or '长期' }}</dd>
+          </dl>
+          <div class="btn-group">
+            <a href="{{ url_for('certificate.preview', cert_type='business_license', cert_id=m.business_license.id) }}" target="_blank" class="btn btn-outline-primary btn-sm">预览</a>
+            <a href="{{ url_for('certificate.download', cert_type='business_license', cert_id=m.business_license.id) }}" class="btn btn-outline-secondary btn-sm">下载</a>
+            <a href="{{ url_for('certificate.edit', cert_type='business_license', cert_id=m.business_license.id) }}" class="btn btn-outline-warning btn-sm">编辑</a>
+            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#del-bl">删除</button>
+          </div>
+        {% endif %}
+        <hr>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#up-bl">
+          <i class="bi bi-upload"></i> {{ '重新上传' if m.business_license else '上传营业执照' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-richtext"></i> 食品经营许可证</span>
+        {% if m.food_license %}
+          <span class="badge {{ status_badge(fl_status) }}">{{ status_label(fl_status) }}</span>
+        {% else %}
+          <span class="badge bg-dark">缺失</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if m.food_license %}
+          <dl class="row small mb-2">
+            <dt class="col-4">许可证编号</dt><dd class="col-8">{{ m.food_license.license_no or '-' }}</dd>
+            <dt class="col-4">经营范围</dt><dd class="col-8">{{ m.food_license.scope or '-' }}</dd>
+            <dt class="col-4">发证机关</dt><dd class="col-8">{{ m.food_license.issuer or '-' }}</dd>
+            <dt class="col-4">发证日期</dt><dd class="col-8">{{ m.food_license.issue_date or '-' }}</dd>
+            <dt class="col-4">有效期至</dt><dd class="col-8">{{ m.food_license.valid_until or '长期' }}</dd>
+          </dl>
+          <div class="btn-group">
+            <a href="{{ url_for('certificate.preview', cert_type='food_license', cert_id=m.food_license.id) }}" target="_blank" class="btn btn-outline-primary btn-sm">预览</a>
+            <a href="{{ url_for('certificate.download', cert_type='food_license', cert_id=m.food_license.id) }}" class="btn btn-outline-secondary btn-sm">下载</a>
+            <a href="{{ url_for('certificate.edit', cert_type='food_license', cert_id=m.food_license.id) }}" class="btn btn-outline-warning btn-sm">编辑</a>
+            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#del-fl">删除</button>
+          </div>
+        {% endif %}
+        <hr>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#up-fl">
+          <i class="bi bi-upload"></i> {{ '重新上传' if m.food_license else '上传食品经营许可证' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-box-seam"></i> 商品列表（{{ products|length }}）</span>
+    <form method="get" class="d-flex" action="{{ url_for('manufacturer.detail', manufacturer_id=m.id) }}">
+      <input type="hidden" name="manufacturer_id" value="{{ m.id }}">
+      <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="过滤商品名/规格" value="{{ q }}">
+      <button class="btn btn-sm btn-outline-primary">过滤</button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>商品名</th><th>类别</th><th>规格</th><th>第三方检验</th><th>出厂检验</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        {% if p._cert_summary is defined %}
+          {% set cs = p._cert_summary %}
+        {% else %}
+          {% set cs = None %}
+        {% endif %}
+        <tr>
+          <td><a href="{{ url_for('product.detail', product_id=p.id) }}">{{ p.name }}</a></td>
+          <td>{{ p.category or '-' }}</td>
+          <td>{{ p.spec or '-' }}</td>
+          <td>
+            {% if cs %}
+              <a href="{{ url_for('product.detail', product_id=p.id) }}#third-party">
+                <span class="badge {{ status_badge(cs.third_party) }}">{{ status_label(cs.third_party) }}</span>
+              </a>
+            {% else %}-{% endif %}
+          </td>
+          <td>
+            {% if cs %}
+              <a href="{{ url_for('product.detail', product_id=p.id) }}#factory">
+                <span class="badge {{ status_badge(cs.factory) }}">{{ status_label(cs.factory) }}</span>
+              </a>
+            {% else %}-{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('product.detail', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">详情</a>
+            <a href="{{ url_for('product.edit', product_id=p.id) }}" class="btn btn-sm btn-outline-secondary">编辑</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-3">暂无商品</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 上传营业执照 模态 -->
+<div class="modal fade" id="up-bl" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <form method="post" action="{{ url_for('manufacturer.upload_business_license', manufacturer_id=m.id) }}" enctype="multipart/form-data">
+    <div class="modal-header"><h5 class="modal-title">上传营业执照</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="mb-3"><label class="form-label">选择文件（PDF/Word/图片）</label><input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,image/*" required></div>
+      <div class="row g-2">
+        <div class="col-md-6"><label class="form-label small">执照编号</label><input type="text" name="license_no" class="form-control"></div>
+        <div class="col-md-6"><label class="form-label small">法定代表人</label><input type="text" name="legal_person" class="form-control"></div>
+        <div class="col-md-6"><label class="form-label small">发证日期</label>{{ date_picker('issue_date', None, id_suffix='bl-issue') }}</div>
+        <div class="col-md-6"><label class="form-label small">有效期至（留空表示长期）</label>{{ date_picker('valid_until', None, id_suffix='bl-vu') }}</div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary">上传</button></div>
+  </form>
+</div></div></div>
+
+<!-- 上传食品证 模态 -->
+<div class="modal fade" id="up-fl" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <form method="post" action="{{ url_for('manufacturer.upload_food_license', manufacturer_id=m.id) }}" enctype="multipart/form-data">
+    <div class="modal-header"><h5 class="modal-title">上传食品经营许可证</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="mb-3"><label class="form-label">选择文件</label><input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,image/*" required></div>
+      <div class="row g-2">
+        <div class="col-md-6"><label class="form-label small">许可证编号</label><input type="text" name="license_no" class="form-control"></div>
+        <div class="col-md-6"><label class="form-label small">发证机关</label><input type="text" name="issuer" class="form-control"></div>
+        <div class="col-12"><label class="form-label small">经营范围</label><input type="text" name="scope" class="form-control"></div>
+        <div class="col-md-6"><label class="form-label small">发证日期</label>{{ date_picker('issue_date', None, id_suffix='fl-issue') }}</div>
+        <div class="col-md-6"><label class="form-label small">有效期至（留空表示长期）</label>{{ date_picker('valid_until', None, id_suffix='fl-vu') }}</div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary">上传</button></div>
+  </form>
+</div></div></div>
+
+<!-- 删除 模态（仅在证件存在时渲染） -->
+{% if m.business_license %}
+<div class="modal fade" id="del-bl" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <form method="post" action="{{ url_for('certificate.delete', cert_type='business_license', cert_id=m.business_license.id) }}">
+    <div class="modal-header"><h5 class="modal-title">确认删除营业执照？</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">将删除文件与记录，无法恢复。</div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-danger">删除</button></div>
+  </form>
+</div></div></div>
+{% endif %}
+{% if m.food_license %}
+<div class="modal fade" id="del-fl" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <form method="post" action="{{ url_for('certificate.delete', cert_type='food_license', cert_id=m.food_license.id) }}">
+    <div class="modal-header"><h5 class="modal-title">确认删除食品经营许可证？</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">将删除文件与记录，无法恢复。</div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-danger">删除</button></div>
+  </form>
+</div></div></div>
+{% endif %}
+{% endblock %}

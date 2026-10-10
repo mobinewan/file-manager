@@ -1,0 +1,13 @@
+package-structure.md
+__pycache__/
+*.db
+uploads/
+instance/
+.env
+.DS_Store
+*.tmp
+*.log
+.trae/
+*.bak
+*~
+backup/

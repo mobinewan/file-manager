@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}批量上传结果{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-list-check"></i> 批量上传结果（共 {{ results|length }} 个文件）</h4>
+  <a href="{{ url_for('bulk.upload') }}" class="btn btn-outline-primary btn-sm">继续上传</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>文件名</th><th>状态</th><th>说明</th><th>厂家</th><th>商品</th><th>证件类型</th></tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr class="{{ 'table-success' if r.status == 'success' else ('table-danger' if r.status == 'error' else 'table-warning') }}">
+          <td>{{ r.filename }}</td>
+          <td>
+            {% if r.status == 'success' %}
+              <span class="badge bg-success">成功</span>
+            {% elif r.status == 'error' %}
+              <span class="badge bg-danger">失败</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">跳过</span>
+            {% endif %}
+          </td>
+          <td>{{ r.message }}</td>
+          <td>{{ r.manufacturer or '-' }}</td>
+          <td>{{ r.product or '-' }}</td>
+          <td>{{ r.cert_type or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

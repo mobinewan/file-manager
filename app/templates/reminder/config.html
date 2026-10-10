@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}阈值配置{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light"><i class="bi bi-gear"></i> 到期提醒配置</div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">到期提醒阈值（天）</label>
+            <input type="number" name="default_threshold_days" class="form-control" value="{{ setting.default_threshold_days }}" min="0" required>
+            <div class="form-text">证件有效期剩余天数 ≤ 此值时，将进入"即将到期"列表</div>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" name="enable_alert" class="form-check-input" id="enable_alert" {{ 'checked' if setting.enable_alert else '' }}>
+            <label class="form-check-label" for="enable_alert">启用到期提醒徽章</label>
+          </div>
+          <button class="btn btn-primary">保存</button>
+          <a href="{{ url_for('reminder.dashboard') }}" class="btn btn-link">返回看板</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

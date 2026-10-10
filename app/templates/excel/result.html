@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}比对结果{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-file-earmark-check"></i> 比对结果（共 {{ results|length }} 条）</h4>
+  <div>
+    {% if has_export %}
+    <a href="{{ url_for('excel.export', task_id=task_id) }}" class="btn btn-success btn-sm"><i class="bi bi-download"></i> 导出 Excel</a>
+    {% endif %}
+    <a href="{{ url_for('excel.upload') }}" class="btn btn-outline-primary btn-sm">重新上传</a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>厂家名</th>
+          <th>商品名</th>
+          <th>规格</th>
+          <th>厂家</th>
+          <th>商品</th>
+          <th>营业执照</th>
+          <th>食品证</th>
+          <th>第三方检验</th>
+          <th>厂检</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in results %}
+        <tr class="{{ 'table-warning' if not r.found_manufacturer or not r.found_product else '' }}">
+          <td>{{ r.manufacturer_name }}</td>
+          <td>{{ r.product_name }}</td>
+          <td>{{ r.spec or '-' }}</td>
+          <td>
+            {% if r.found_manufacturer %}<span class="badge bg-success">有</span>{% else %}<span class="badge bg-dark">无</span>{% endif %}
+          </td>
+          <td>
+            {% if r.found_product %}<span class="badge bg-success">有</span>{% else %}<span class="badge bg-dark">无</span>{% endif %}
+          </td>
+          <td><span class="badge {{ status_badge(r.bl_status) }}">{{ status_label(r.bl_status) }}</span></td>
+          <td><span class="badge {{ status_badge(r.fl_status) }}">{{ status_label(r.fl_status) }}</span></td>
+          <td>
+            <span class="badge {{ status_badge(r.tp_status) }}">{{ status_label(r.tp_status) }}</span>
+            {% if r.tp_remaining is not none %}<small class="text-muted">({{ r.tp_remaining }}天)</small>{% endif %}
+          </td>
+          <td>
+            <span class="badge {{ status_badge(r.fc_status) }}">{{ status_label(r.fc_status) }}</span>
+            {% if r.fc_remaining is not none %}<small class="text-muted">({{ r.fc_remaining }}天)</small>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

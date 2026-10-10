@@ -1,0 +1,31 @@
+{# 通用 Jinja2 宏 #}
+
+{#
+三段式日期输入宏：年/月/日 三个独立 input + 一个 hidden 合并字段。
+- name: 表单字段名（最终提交的 YYYY-MM-DD 字符串）
+- value: 已有日期值（date 对象或 "YYYY-MM-DD" 字符串或 None）
+- required: 是否必填
+- id_suffix: 用于生成唯一 id（同一表单多次调用同 name 时需不同）
+用法：{% from "macros.html" import date_picker %}
+      {{ date_picker('valid_until', p.valid_until, required=True) }}
+#}
+{% macro date_picker(name, value=None, required=False, id_suffix=None) -%}
+{% set ns = namespace(y='', m='', d='') %}
+{% if value %}
+  {% set vs = value|string %}
+  {% if vs|length >= 10 %}
+    {% set ns.y = vs[0:4] %}
+    {% set ns.m = vs[5:7] %}
+    {% set ns.d = vs[8:10] %}
+  {% endif %}
+{% endif %}
+{% set uid = id_suffix if id_suffix else name %}
+<div class="date-picker d-inline-flex align-items-center gap-1" data-name="{{ name }}">
+  <input type="text" class="form-control form-control-sm date-y" style="width:5rem" maxlength="4" inputmode="numeric" placeholder="年" value="{{ ns.y }}" id="dp-{{ uid }}-y" autocomplete="off">
+  <span>-</span>
+  <input type="text" class="form-control form-control-sm date-m" style="width:3.5rem" maxlength="2" inputmode="numeric" placeholder="月" value="{{ ns.m }}" id="dp-{{ uid }}-m" autocomplete="off">
+  <span>-</span>
+  <input type="text" class="form-control form-control-sm date-d" style="width:3.5rem" maxlength="2" inputmode="numeric" placeholder="日" value="{{ ns.d }}" id="dp-{{ uid }}-d" autocomplete="off">
+  <input type="hidden" name="{{ name }}" value="{% if ns.y and ns.m and ns.d %}{{ ns.y }}-{{ ns.m }}-{{ ns.d }}{% endif %}"{% if required %} required{% endif %}>
+</div>
+{%- endmacro %}

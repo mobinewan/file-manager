@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}品类：{{ category }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0"><i class="bi bi-tag"></i> {{ category }}</h4>
+    <div class="text-muted small">品类为顶级，下方为该品类各商品的四类证件状态。</div>
+  </div>
+  <a href="{{ url_for('category.list_categories') }}" class="btn btn-outline-secondary btn-sm">返回品类列表</a>
+</div>
+
+<!-- 搜索框 -->
+<form method="get" action="{{ url_for('category.detail', category_name=category) }}" class="input-group mb-3" style="max-width:520px">
+  <span class="input-group-text"><i class="bi bi-search"></i></span>
+  <input type="text" name="q" class="form-control" value="{{ q or '' }}" placeholder="模糊搜索：商品名/规格、厂家名、营业执照编号、食品证编号、第三方报告编号/机构、厂检批次号/生产日期">
+  <button class="btn btn-primary" type="submit">搜索</button>
+  {% if q %}<a href="{{ url_for('category.detail', category_name=category) }}" class="btn btn-outline-secondary">清除</a>{% endif %}
+</form>
+{% if q %}
+<div class="text-muted small mb-2">关键词：<strong>{{ q }}</strong> · 命中 {{ products|length }} 件商品</div>
+{% endif %}
+
+{% if not products %}
+<div class="alert alert-warning">
+  {% if q %}未找到匹配"{{ q }}"的结果{% else %}该品类下暂无商品。{% endif %}
+</div>
+{% else %}
+
+<div class="mb-2 text-muted small">共 {{ products|length }} 件商品；涉及 {{ manufacturers|length }} 个厂家（同一营业执照/许可证可覆盖多品类多商品）</div>
+
+{% for p in products %}
+{% set cs = p._cert_summary %}
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div>
+      <i class="bi bi-box-seam"></i>
+      <a href="{{ url_for('product.detail', product_id=p.id) }}" class="fw-bold text-decoration-none fs-5">{{ p.name }}</a>
+      {% if p.spec %}<span class="text-muted small ms-2">（{{ p.spec }}）</span>{% endif %}
+    </div>
+    <a href="{{ url_for('manufacturer.detail', manufacturer_id=p.manufacturer_id) }}" class="badge bg-light text-dark text-decoration-none">
+      <i class="bi bi-building"></i> {{ p.manufacturer.name }}
+    </a>
+  </div>
+  <div class="card-body">
+    <div class="row g-2">
+      <!-- 营业执照 -->
+      <div class="col-md-3">
+        <div class="border rounded p-2 h-100">
+          <div class="d-flex justify-content-between">
+            <strong class="small">营业执照</strong>
+            <span class="badge {{ status_badge(cs.business_license) }}">{{ status_label(cs.business_license) }}</span>
+          </div>
+          <div class="small text-muted">
+            {% if p.manufacturer.business_license %}
+              有效期至：{{ p.manufacturer.business_license.valid_until or '长期' }}
+              {% if p.manufacturer.business_license.license_no %}<br><span class="text-secondary">编号：{{ p.manufacturer.business_license.license_no }}</span>{% endif %}
+              <a href="{{ url_for('certificate.preview', cert_type='business_license', cert_id=p.manufacturer.business_license.id) }}" target="_blank" class="d-block small mt-1">查看</a>
+            {% else %}未上传{% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- 食品经营许可证 -->
+      <div class="col-md-3">
+        <div class="border rounded p-2 h-100">
+          <div class="d-flex justify-content-between">
+            <strong class="small">食品经营许可证</strong>
+            <span class="badge {{ status_badge(cs.food_license) }}">{{ status_label(cs.food_license) }}</span>
+          </div>
+          <div class="small text-muted">
+            {% if p.manufacturer.food_license %}
+              有效期至：{{ p.manufacturer.food_license.valid_until or '长期' }}
+              {% if p.manufacturer.food_license.license_no %}<br><span class="text-secondary">编号：{{ p.manufacturer.food_license.license_no }}</span>{% endif %}
+              <a href="{{ url_for('certificate.preview', cert_type='food_license', cert_id=p.manufacturer.food_license.id) }}" target="_blank" class="d-block small mt-1">查看</a>
+            {% else %}未上传{% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- 第三方检验报告 -->
+      <div class="col-md-3">
+        <div class="border rounded p-2 h-100">
+          <div class="d-flex justify-content-between">
+            <strong class="small">第三方检验报告</strong>
+            <span class="badge {{ status_badge(cs.third_party) }}">{{ status_label(cs.third_party) }}</span>
+          </div>
+          <div class="small text-muted">
+            {% set latest_tp = p.third_party_reports|selectattr('test_date')|sort(attribute='test_date', reverse=True)|first %}
+            {% if latest_tp %}
+              {% if latest_tp.testing_org %}机构：{{ latest_tp.testing_org }}<br>{% endif %}
+              {% if latest_tp.report_no %}<span class="text-secondary">编号：{{ latest_tp.report_no }}</span><br>{% endif %}
+              {% if latest_tp.valid_until %}有效期至：{{ latest_tp.valid_until }}<br>{% endif %}
+            {% endif %}
+            <a href="{{ url_for('product.detail', product_id=p.id) }}#third-party" class="text-decoration-none">查看报告列表</a>
+          </div>
+        </div>
+      </div>
+      <!-- 出厂检验报告 -->
+      <div class="col-md-3">
+        <div class="border rounded p-2 h-100">
+          <div class="d-flex justify-content-between">
+            <strong class="small">出厂检验报告</strong>
+            <span class="badge {{ status_badge(cs.factory) }}">{{ status_label(cs.factory) }}</span>
+          </div>
+          <div class="small text-muted">
+            {% set latest_fc = p.factory_reports|selectattr('test_date')|sort(attribute='test_date', reverse=True)|first %}
+            {% if latest_fc %}
+              {% if latest_fc.batch_no %}批次：{{ latest_fc.batch_no }}<br>{% endif %}
+              {% if latest_fc.production_date %}生产日期：{{ latest_fc.production_date }}<br>{% endif %}
+              {% if latest_fc.test_date %}检验日期：{{ latest_fc.test_date }}<br>{% endif %}
+            {% endif %}
+            <a href="{{ url_for('product.detail', product_id=p.id) }}#factory" class="text-decoration-none">查看报告列表</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endif %}
+{% endblock %}
