@@ -4,7 +4,7 @@
 [![Flask](https://img.shields.io/badge/Framework-Flask-lightgrey.svg)](https://flask.palletsprojects.com/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-brightgreen.svg)](https://www.sqlite.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-v0.26.10.10-orange.svg)]()
+[![Version](https://img.shields.io/badge/Version-v0.26.10.12-orange.svg)]()
 
 基于 Flask + Docker 的食品经营许可管理系统，支持多品类证件的集中管理和批量下载。
 
@@ -38,6 +38,13 @@
 - 三段式日期输入（年/月/日），提升录入效率
 - 输入4位年份后自动跳转到月份字段
 - 第三方检验报告默认日期智能填充
+
+### 📝 操作日志
+- **完整操作记录** - 记录所有资质上传、下载、变更操作
+- **身份追溯** - 自动记录操作人、IP地址、设备类型
+- **高级筛选** - 支持按操作类型、类别、用户、时间范围筛选
+- **数据导出** - 支持导出为 JSON 格式便于审计分析
+- **权限控制** - 仅管理员可访问日志查询页面
 
 ---
 
@@ -98,6 +105,7 @@ file-manager/
 │   ├── category/             # 品类管理
 │   ├── certificate/          # 证书编辑
 │   ├── excel_import/         # Excel 导入
+│   ├── log/                  # 操作日志模块
 │   ├── manufacturer/         # 厂家管理
 │   ├── models/               # 数据模型
 │   ├── product/              # 商品管理
@@ -164,11 +172,17 @@ file-manager/
 2. 可自定义预警阈值（默认30天）
 3. 点击跳转到具体证书详情页进行更新
 
+### 操作日志查询（管理员）
+1. 导航到 **操作日志** 页面
+2. 可按操作类型、操作类别、用户、日期范围筛选
+3. 支持导出 JSON 格式日志数据
+4. 日志包含操作时间、操作人、IP地址、设备类型等完整信息
+
 ---
 
 ## 📝 版本历史
 
-### v0.26.10.10（当前版本）
+### v0.26.10.12（当前版本）
 - ✅ 新增品类拓扑结构浏览
 - ✅ 新增打包下载功能（支持批量导出4种证件）
 - ✅ 品类详情页增加模糊搜索
@@ -178,6 +192,8 @@ file-manager/
 - ✅ 厂检报告不在预警系统中显示
 - ✅ 用户权限细化为5个独立控制点
 - ✅ 新增证书编辑功能
+- ✅ 新增操作日志系统，记录资质上传/下载/变更操作
+- ✅ 操作日志仅管理员可访问，包含操作人/IP/设备类型信息
 
 ---
 
@@ -190,6 +206,21 @@ file-manager/
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 开启 Pull Request
+
+---
+
+## 📄 许可证
+
+本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
+
+---
+
+## 🙏 致谢
+
+- [Flask](https://flask.palletsprojects.com/) - Web 框架
+- [Flask-SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/) - ORM
+- [Bootstrap 5](https://getbootstrap.com/) - 前端 UI 框架
+- [SQLite](https://www.sqlite.org/) - 嵌入式数据库
 
 ---
 

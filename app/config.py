@@ -1,6 +1,8 @@
 """应用配置。从环境变量读取部署相关参数，便于 Docker 注入。"""
 import os
 
+__version__ = "v0.26.10.12"
+
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
