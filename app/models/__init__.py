@@ -5,6 +5,7 @@ from .product import Product
 from .license import BusinessLicense, FoodLicense
 from .report import ThirdPartyReport, FactoryReport
 from .setting import Setting
+from .log import LogEntry
 
 __all__ = [
     "User",
@@ -15,4 +16,5 @@ __all__ = [
     "ThirdPartyReport",
     "FactoryReport",
     "Setting",
+    "LogEntry",
 ]
