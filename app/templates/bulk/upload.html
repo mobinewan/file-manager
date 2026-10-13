@@ -8,8 +8,8 @@
       <div class="card-body">
         <div class="alert alert-info">
           <h6 class="alert-heading"><i class="bi bi-info-circle"></i> 文件命名规则</h6>
-          <p class="mb-1">文件名按以下格式命名，分隔符支持 <code>|</code> <code>__</code> <code>#</code> <code>—</code> <code>_</code>：</p>
-          <pre class="mb-2"><code>厂家名|商品名|规格|类别|证件类型[|日期]</code></pre>
+          <p class="mb-1">文件名按以下格式命名，分隔符支持 <code>-</code> <code>__</code> <code>#</code> <code>—</code> <code>_</code>：</p>
+          <pre class="mb-2"><code>厂家名-商品名-规格-类别-证件类型[-日期]</code></pre>
           <p class="mb-1"><strong>证件类型关键字</strong>（任一即可）：</p>
           <ul class="small mb-2">
             <li><code>营业执照</code> / <code>执照</code> / <code>business</code> → 营业执照</li>
@@ -19,12 +19,12 @@
           </ul>
           <p class="mb-1"><strong>示例：</strong></p>
           <ul class="small mb-0">
-            <li><code>海天|营业执照.pdf</code> — 厂家级证件</li>
-            <li><code>海天|生抽|500ml|酱油|第三方检验报告|2026-12-31.pdf</code> — 单品级，指定有效期</li>
-            <li><code>海天|生抽|500ml|出厂检验报告|2026-09-21.pdf</code> — 厂检，日期为生产日期，有效期=生产日期+保质期-1天</li>
+            <li><code>海天-营业执照.pdf</code> — 厂家级证件</li>
+            <li><code>海天-生抽-500ml-酱油-第三方检验报告-2026-12-31.pdf</code> — 单品级，指定有效期</li>
+            <li><code>海天-生抽-500ml-出厂检验报告-2026-09-21.pdf</code> — 厂检，日期为生产日期</li>
           </ul>
           <hr>
-          <p class="mb-0 text-muted">系统会<strong>自动创建</strong>不存在的厂家、商品与类别；厂家级证件会覆盖旧文件，单品级报告会新增一条记录。日期可选（YYYY-MM-DD）：第三方报告作为有效期至（未填默认1年），厂检作为生产日期（有效期=生产日期+产品保质期-1天，无保质期默认365天）。</p>
+          <p class="mb-0 text-muted">系统会<strong>自动创建</strong>不存在的厂家、商品与类别；厂家级证件会覆盖旧文件，单品级报告会新增一条记录。日期可选（YYYY-MM-DD）：第三方报告作为有效期至（未填默认1年），厂检作为生产日期（有效期=生产日期）。</p>
         </div>
 
         <div class="row g-3">
