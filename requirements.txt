@@ -4,3 +4,5 @@ Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.30
 openpyxl==3.1.2
 Werkzeug==3.0.3
+paddleocr>=2.0.1
+paddlepaddle>=2.4.0
