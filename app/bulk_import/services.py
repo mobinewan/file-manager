@@ -143,18 +143,23 @@ def _try_parse_parts(parts):
         }
 
 
-def process_single_file(file_storage, original_filename):
+def process_single_file(file_storage, original_filename, file_content=None):
     """处理单个文件：解析文件名 → 自动创建厂家/商品 → 保存证件。
 
-    返回 dict：{filename, status, message, manufacturer, product, cert_type}
+    返回 dict：{filename, status, message, manufacturer, product, cert_type, file_content}
     """
+    # 保存原始文件内容（如果还没保存）
+    if file_content is None:
+        try:
+            file_storage.stream.seek(0)
+            file_content = file_storage.stream.read()
+            file_storage.stream.seek(0)
+        except Exception:
+            file_content = None
+
     parsed = parse_filename(original_filename)
     if not parsed:
-        return {
-            "filename": original_filename,
-            "status": "error",
-            "message": "文件名格式无法识别，请按 厂家名-商品名-规格-类别-证件类型 命名",
-        }
+        return _err(original_filename, "文件名格式无法识别，请按 厂家名-商品名-规格-类别-证件类型 命名", file_content=file_content)
 
     cert_type = parsed["cert_type"]
     date_val = parse_date(parsed["date_str"])
@@ -173,7 +178,7 @@ def process_single_file(file_storage, original_filename):
             rel, original = save_upload(file_storage, "LICENSE_SUBDIR")
             if not rel:
                 db.session.rollback()
-                return _err(original_filename, "文件保存失败（类型不支持）")
+                return _err(original_filename, "文件保存失败（类型不支持）", file_content=file_content)
             if m.business_license:
                 m.business_license.file_path = rel
                 m.business_license.file_name = original
@@ -189,7 +194,7 @@ def process_single_file(file_storage, original_filename):
             rel, original = save_upload(file_storage, "LICENSE_SUBDIR")
             if not rel:
                 db.session.rollback()
-                return _err(original_filename, "文件保存失败（类型不支持）")
+                return _err(original_filename, "文件保存失败（类型不支持）", file_content=file_content)
             if m.food_license:
                 m.food_license.file_path = rel
                 m.food_license.file_name = original
@@ -223,7 +228,7 @@ def process_single_file(file_storage, original_filename):
             rel, original = save_upload(file_storage, "THIRD_PARTY_SUBDIR")
             if not rel:
                 db.session.rollback()
-                return _err(original_filename, "文件保存失败（类型不支持）")
+                return _err(original_filename, "文件保存失败（类型不支持）", file_content=file_content)
             valid_until = date_val or (date.today() + timedelta(days=365))
             r = ThirdPartyReport(
                 product_id=p.id,
@@ -241,7 +246,7 @@ def process_single_file(file_storage, original_filename):
             rel, original = save_upload(file_storage, "FACTORY_SUBDIR")
             if not rel:
                 db.session.rollback()
-                return _err(original_filename, "文件保存失败（类型不支持）")
+                return _err(original_filename, "文件保存失败（类型不支持）", file_content=file_content)
             # 厂检不再有保质期/到期日概念，仅记录生产与检验日期
             production_date = date_val or date.today()
             test_date = production_date  # 检验日期默认同生产日期
@@ -259,10 +264,10 @@ def process_single_file(file_storage, original_filename):
             return _ok(original_filename, "出厂检验报告", m, p, manufacturer_created, product_created)
 
         db.session.rollback()
-        return _err(original_filename, "未知证件类型")
+        return _err(original_filename, "未知证件类型", file_content=file_content)
     except Exception as e:
         db.session.rollback()
-        return _err(original_filename, f"处理异常：{e}")
+        return _err(original_filename, f"处理异常：{e}", file_content=file_content)
 
 
 def _ok(filename, cert_type, manufacturer, product, manufacturer_created=False, product_created=False):
@@ -284,8 +289,11 @@ def _ok(filename, cert_type, manufacturer, product, manufacturer_created=False, 
     }
 
 
-def _err(filename, message):
-    return {"filename": filename, "status": "error", "message": message}
+def _err(filename, message, file_content=None):
+    result = {"filename": filename, "status": "error", "message": message}
+    if file_content is not None:
+        result["file_content"] = file_content
+    return result
 
 
 def process_zip(file_storage):
