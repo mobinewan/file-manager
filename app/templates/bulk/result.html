@@ -10,7 +10,15 @@
   <div class="table-responsive">
     <table class="table table-sm table-hover mb-0">
       <thead class="table-light">
-        <tr><th>文件名</th><th>状态</th><th>说明</th><th>厂家</th><th>商品</th><th>证件类型</th></tr>
+        <tr>
+          <th>文件名</th>
+          <th>状态</th>
+          <th>说明</th>
+          <th>厂家</th>
+          <th>商品</th>
+          <th>证件类型</th>
+          <th>操作</th>
+        </tr>
       </thead>
       <tbody>
         {% for r in results %}
@@ -29,10 +37,191 @@
           <td>{{ r.manufacturer or '-' }}</td>
           <td>{{ r.product or '-' }}</td>
           <td>{{ r.cert_type or '-' }}</td>
+          <td>
+            {% if r.status == 'error' and r.uploaded_id %}
+            <button class="btn btn-sm btn-outline-primary" onclick="editUpload({{ r.uploaded_id }}, '{{ r.cert_type }}', '{{ r.manufacturer or '' }}', '{{ r.product or '' }}')">
+              <i class="bi bi-pencil"></i> 手动修正
+            </button>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- 手动修正弹窗 -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil-square"></i> 手动修正证件信息</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm">
+          <input type="hidden" id="uploadId" name="uploadId">
+          <input type="hidden" id="originalType" name="originalType">
+          
+          <!-- 证件类型选择 -->
+          <div class="mb-3">
+            <label class="form-label">证件类型</label>
+            <select class="form-select" id="certType" name="certType" required>
+              <option value="">-- 请选择 --</option>
+              <option value="business_license">营业执照</option>
+              <option value="food_license">食品经营许可证</option>
+              <option value="third_party">第三方检验报告</option>
+              <option value="factory">出厂检验报告</option>
+            </select>
+          </div>
+          
+          <!-- 厂家选择 -->
+          <div class="mb-3" id="manufacturerGroup">
+            <label class="form-label">厂家</label>
+            <input type="text" class="form-control" id="manufacturerName" name="manufacturerName" placeholder="输入厂家名称">
+            <div class="form-text" id="manufacturerHint">系统将自动创建不存在的厂家</div>
+          </div>
+          
+          <!-- 商品选择（仅单品级证件） -->
+          <div class="mb-3" id="productGroup" style="display:none;">
+            <label class="form-label">商品</label>
+            <input type="text" class="form-control" id="productName" name="productName" placeholder="输入商品名称">
+            <div class="form-text">系统将自动创建不存在的商品</div>
+          </div>
+          
+          <!-- 日期字段（动态显示） -->
+          <div id="dateFields"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="saveEdit()">保存修改</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let editModal;
+document.addEventListener('DOMContentLoaded', function() {
+  editModal = new bootstrap.Modal(document.getElementById('editModal'));
+  
+  // 证件类型切换时更新表单
+  document.getElementById('certType').addEventListener('change', function() {
+    updateDateFields(this.value);
+  });
+});
+
+function editUpload(uploadId, certType, manufacturer, product) {
+  document.getElementById('uploadId').value = uploadId;
+  document.getElementById('originalType').value = certType;
+  document.getElementById('certType').value = certType;
+  document.getElementById('manufacturerName').value = manufacturer;
+  document.getElementById('productName').value = product || '';
+  
+  // 根据证件类型显示/隐藏商品字段
+  const isProductLevel = ['third_party', 'factory'].includes(certType);
+  document.getElementById('productGroup').style.display = isProductLevel ? 'block' : 'none';
+  
+  updateDateFields(certType);
+  editModal.show();
+}
+
+function updateDateFields(certType) {
+  const container = document.getElementById('dateFields');
+  let html = '';
+  
+  if (certType === 'business_license' || certType === 'food_license') {
+    html = `
+      <div class="mb-3">
+        <label class="form-label">发证日期</label>
+        <input type="date" class="form-control" id="issueDate" name="issueDate">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">有效期至</label>
+        <input type="date" class="form-control" id="validUntil" name="validUntil">
+        <div class="form-text">留空表示长期有效</div>
+      </div>
+    `;
+  } else if (certType === 'third_party') {
+    html = `
+      <div class="mb-3">
+        <label class="form-label">检测日期</label>
+        <input type="date" class="form-control" id="testDate" name="testDate">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">有效期至</label>
+        <input type="date" class="form-control" id="validUntil" name="validUntil">
+        <div class="form-text">默认1年后</div>
+      </div>
+    `;
+  } else if (certType === 'factory') {
+    html = `
+      <div class="mb-3">
+        <label class="form-label">生产日期</label>
+        <input type="date" class="form-control" id="productionDate" name="productionDate">
+        <div class="form-text">检验日期默认同生产日期</div>
+      </div>
+    `;
+  }
+  
+  container.innerHTML = html;
+}
+
+function saveEdit() {
+  const uploadId = document.getElementById('uploadId').value;
+  const certType = document.getElementById('certType').value;
+  const manufacturerName = document.getElementById('manufacturerName').value.trim();
+  const productName = document.getElementById('productName').value.trim();
+  
+  if (!certType || !manufacturerName) {
+    alert('请填写证件类型和厂家名称');
+    return;
+  }
+  
+  if (['third_party', 'factory'].includes(certType) && !productName) {
+    alert('请填写商品名称');
+    return;
+  }
+  
+  // 收集日期数据
+  const dateData = {};
+  const issueDate = document.getElementById('issueDate')?.value;
+  const validUntil = document.getElementById('validUntil')?.value;
+  const testDate = document.getElementById('testDate')?.value;
+  const productionDate = document.getElementById('productionDate')?.value;
+  
+  if (issueDate) dateData.issue_date = issueDate;
+  if (validUntil) dateData.valid_until = validUntil;
+  if (testDate) dateData.test_date = testDate;
+  if (productionDate) dateData.production_date = productionDate;
+  
+  // 发送请求
+  fetch(`/bulk/edit/${uploadId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      cert_type: certType,
+      manufacturer_name: manufacturerName,
+      product_name: productName || null,
+      ...dateData
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('修正成功！请刷新页面查看结果。');
+      location.reload();
+    } else {
+      alert('修正失败：' + data.message);
+    }
+  })
+  .catch(error => {
+    alert('请求失败：' + error.message);
+  });
+}
+</script>
 {% endblock %}
